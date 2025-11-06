@@ -176,7 +176,7 @@ async def generate_speech_stream(
             yield chunk["data"]
 
 
-@app.post("/v1/audio/speech")
+@app.post("/v1/audio/speech", response_model=None)
 async def create_speech(request: SpeechRequest) -> Union[StreamingResponse, Response]:
     """
     Generate audio from the input text.
