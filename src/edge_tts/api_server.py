@@ -35,7 +35,9 @@ VOICE_MAPPING = {
 SUPPORTED_MODELS = ["tts-1", "tts-1-hd", "gpt-4o-mini-tts"]
 
 # Supported response formats
+# Note: Only mp3 is currently supported natively. Other formats require ffmpeg conversion.
 SUPPORTED_FORMATS = ["mp3", "opus", "aac", "flac", "wav", "pcm"]
+NATIVE_FORMATS = ["mp3"]  # Formats supported without conversion
 
 
 class SpeechRequest(BaseModel):
@@ -49,46 +51,13 @@ class SpeechRequest(BaseModel):
     instructions: Optional[str] = Field(
         None, description="Additional instructions for the voice"
     )
-    response_format: str = Field("mp3", description="The format to audio in")
+    response_format: str = Field("mp3", description="The format to return audio in")
     speed: float = Field(
         1.0, ge=0.25, le=4.0, description="The speed of the generated audio"
     )
     stream_format: Optional[str] = Field(
         "audio", description="The format to stream the audio in"
     )
-
-    def validate_model(self) -> None:
-        """Validate the model parameter."""
-        if self.model not in SUPPORTED_MODELS:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Invalid model '{self.model}'. "
-                    f"Supported models: {SUPPORTED_MODELS}"
-                )
-            )
-
-    def validate_voice(self) -> None:
-        """Validate the voice parameter."""
-        if self.voice not in VOICE_MAPPING:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Invalid voice '{self.voice}'. "
-                    f"Supported voices: {list(VOICE_MAPPING.keys())}"
-                )
-            )
-
-    def validate_format(self) -> None:
-        """Validate the response_format parameter."""
-        if self.response_format not in SUPPORTED_FORMATS:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Invalid format '{self.response_format}'. "
-                    f"Supported formats: {SUPPORTED_FORMATS}"
-                )
-            )
 
 
 app = FastAPI(
@@ -183,10 +152,45 @@ async def create_speech(request: SpeechRequest) -> Union[StreamingResponse, Resp
 
     This endpoint is compatible with OpenAI's text-to-speech API.
     """
-    # Validate request parameters
-    request.validate_model()
-    request.validate_voice()
-    request.validate_format()
+    # Validate model parameter
+    if request.model not in SUPPORTED_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid model '{request.model}'. "
+                f"Supported models: {SUPPORTED_MODELS}"
+            )
+        )
+
+    # Validate voice parameter
+    if request.voice not in VOICE_MAPPING:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid voice '{request.voice}'. "
+                f"Supported voices: {list(VOICE_MAPPING.keys())}"
+            )
+        )
+
+    # Validate format parameter
+    if request.response_format not in SUPPORTED_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Invalid format '{request.response_format}'. "
+                f"Supported formats: {SUPPORTED_FORMATS}"
+            )
+        )
+
+    # Check if format is natively supported (currently only mp3)
+    if request.response_format not in NATIVE_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Format '{request.response_format}' requires audio conversion. "
+                f"Only {NATIVE_FORMATS} formats are currently supported."
+            )
+        )
 
     # Map OpenAI voice to edge-tts voice
     edge_voice = VOICE_MAPPING[request.voice]
@@ -196,17 +200,6 @@ async def create_speech(request: SpeechRequest) -> Union[StreamingResponse, Resp
 
     # Get content type
     content_type = get_content_type(request.response_format)
-
-    # Note: Currently only mp3 format is natively supported by edge-tts
-    # Other formats would require additional conversion (ffmpeg)
-    if request.response_format != "mp3":
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Format '{request.response_format}' requires audio conversion. "
-                "Only 'mp3' is currently supported."
-            )
-        )
 
     # Check if streaming is requested
     if request.stream_format == "audio":
