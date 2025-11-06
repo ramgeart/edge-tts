@@ -9,4 +9,11 @@ setup(
         "tabulate>=0.4.4,<1.0.0",
         "typing-extensions>=4.1.0,<5.0.0",
     ],
+    extras_require={
+        "server": [
+            "fastapi>=0.104.0,<1.0.0",
+            "uvicorn>=0.24.0,<1.0.0",
+            "pydantic>=2.0.0,<3.0.0",
+        ],
+    },
 )

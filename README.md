@@ -12,6 +12,18 @@ If you only want to use the `edge-tts` and `edge-playback` commands, it would be
 
     $ pipx install edge-tts
 
+### OpenAI-Compatible API Server
+
+If you want to use the OpenAI-compatible API server, install with server dependencies:
+
+    $ pip install edge-tts[server]
+
+Then start the server:
+
+    $ edge-tts-api
+
+See [API_SERVER.md](API_SERVER.md) for detailed API documentation.
+
 ## Usage
 
 ### Basic usage
