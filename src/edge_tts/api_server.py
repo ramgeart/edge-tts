@@ -39,6 +39,9 @@ SUPPORTED_MODELS = ["tts-1", "tts-1-hd", "gpt-4o-mini-tts"]
 SUPPORTED_FORMATS = ["mp3", "opus", "aac", "flac", "wav", "pcm"]
 NATIVE_FORMATS = ["mp3"]  # Formats supported without conversion
 
+# Supported stream formats
+SUPPORTED_STREAM_FORMATS = ["audio"]  # Only audio streaming is currently supported
+
 
 class SpeechRequest(BaseModel):
     """Request model for speech generation."""
@@ -182,12 +185,12 @@ async def create_speech(request: SpeechRequest) -> Union[StreamingResponse, Resp
         )
 
     # Validate stream_format parameter
-    if request.stream_format and request.stream_format not in ["audio"]:
+    if request.stream_format and request.stream_format not in SUPPORTED_STREAM_FORMATS:
         raise HTTPException(
             status_code=400,
             detail=(
                 f"Stream format '{request.stream_format}' is not supported. "
-                "Only 'audio' format is currently supported."
+                f"Supported formats: {SUPPORTED_STREAM_FORMATS}"
             )
         )
 
