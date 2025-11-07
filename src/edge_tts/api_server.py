@@ -48,9 +48,6 @@ class SpeechRequest(BaseModel):
     )
     model: str = Field(..., description="One of the available TTS models")
     voice: str = Field(..., description="The voice to use when generating the audio")
-    instructions: Optional[str] = Field(
-        None, description="Additional instructions for the voice"
-    )
     response_format: str = Field("mp3", description="The format to return audio in")
     speed: float = Field(
         1.0, ge=0.25, le=4.0, description="The speed of the generated audio"
@@ -93,7 +90,9 @@ def get_content_type(response_format: str) -> str:
         "wav": "audio/wav",
         "pcm": "audio/pcm",
     }
-    return format_to_mime.get(response_format, "audio/mpeg")
+    if response_format not in format_to_mime:
+        raise ValueError(f"Unknown response format: {response_format}")
+    return format_to_mime[response_format]
 
 
 async def generate_speech(
@@ -172,23 +171,23 @@ async def create_speech(request: SpeechRequest) -> Union[StreamingResponse, Resp
             )
         )
 
-    # Validate format parameter
-    if request.response_format not in SUPPORTED_FORMATS:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Invalid format '{request.response_format}'. "
-                f"Supported formats: {SUPPORTED_FORMATS}"
-            )
-        )
-
-    # Check if format is natively supported (currently only mp3)
+    # Validate format parameter - only mp3 is currently supported
     if request.response_format not in NATIVE_FORMATS:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Format '{request.response_format}' requires audio conversion. "
+                f"Format '{request.response_format}' is not supported. "
                 f"Only {NATIVE_FORMATS} formats are currently supported."
+            )
+        )
+
+    # Validate stream_format parameter
+    if request.stream_format and request.stream_format not in ["audio"]:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Stream format '{request.stream_format}' is not supported. "
+                "Only 'audio' format is currently supported."
             )
         )
 
@@ -220,11 +219,36 @@ async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
 
-def main() -> None:
-    """Run the API server."""
+def main(host: str = "127.0.0.1", port: int = 5050) -> None:
+    """
+    Run the API server.
+
+    By default, the server binds to localhost (127.0.0.1) for security reasons.
+    To expose the server to other machines, specify host="0.0.0.0" explicitly.
+
+    Args:
+        host: The host IP address to bind to (default: "127.0.0.1")
+        port: The port to listen on (default: 5050)
+    """
     import uvicorn  # pylint: disable=import-outside-toplevel
-    uvicorn.run(app, host="0.0.0.0", port=5050)
+    uvicorn.run(app, host=host, port=port)
 
 
 if __name__ == "__main__":
-    main()
+    import argparse  # pylint: disable=import-outside-toplevel
+    parser = argparse.ArgumentParser(description="Run the Edge TTS API server.")
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host IP address to bind to (default: 127.0.0.1). "
+             "Use 0.0.0.0 to expose to all interfaces."
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=5050,
+        help="Port to listen on (default: 5050)."
+    )
+    args = parser.parse_args()
+    main(host=args.host, port=args.port)

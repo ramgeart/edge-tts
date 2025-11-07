@@ -18,7 +18,19 @@ Run the API server with:
 edge-tts-api
 ```
 
-By default, the server runs on `http://0.0.0.0:5050`.
+By default, the server runs on `http://127.0.0.1:5050` (localhost only for security).
+
+To expose the server to other machines on your network:
+
+```bash
+edge-tts-api --host 0.0.0.0
+```
+
+To use a different port:
+
+```bash
+edge-tts-api --port 8080
+```
 
 ## API Endpoints
 
@@ -177,9 +189,9 @@ OpenAI voices are mapped to Microsoft Edge TTS voices as follows:
 
 ## Limitations
 
-- Currently only `mp3` format is supported. Other formats (opus, aac, flac, wav, pcm) would require audio conversion with ffmpeg.
-- The `instructions` parameter is not implemented (not supported by Edge TTS).
-- The `stream_format: "sse"` is not implemented.
+- Currently only `mp3` format is supported. Other formats (opus, aac, flac, wav, pcm) are not supported.
+- The `instructions` parameter from OpenAI's API is not supported (not available in Edge TTS).
+- The `stream_format` parameter only supports `"audio"` (default). SSE streaming is not implemented.
 
 ## OpenAPI Documentation
 

@@ -12,7 +12,17 @@ pip install edge-tts[server]
 edge-tts-api
 ```
 
-The server will start on `http://0.0.0.0:5050`
+The server will start on `http://127.0.0.1:5050` (localhost only)
+
+To expose to other machines:
+```bash
+edge-tts-api --host 0.0.0.0
+```
+
+To use a different port:
+```bash
+edge-tts-api --port 8080
+```
 
 ## Test with cURL
 
@@ -48,9 +58,9 @@ curl -X POST http://localhost:5050/v1/audio/speech \
 | input | string | required | Text to convert (max 4096 chars) |
 | model | string | required | Model: tts-1, tts-1-hd, or gpt-4o-mini-tts |
 | voice | string | required | Voice name (see list above) |
-| response_format | string | "mp3" | Audio format (currently only mp3 supported) |
+| response_format | string | "mp3" | Audio format (only mp3 supported) |
 | speed | float | 1.0 | Speed from 0.25 to 4.0 |
-| stream_format | string | "audio" | Streaming format |
+| stream_format | string | "audio" | Streaming format (only "audio" supported) |
 
 ## Health Check
 
